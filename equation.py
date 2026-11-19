@@ -93,8 +93,5 @@ def solveQuadratic(terms):
         return f"x = {real} + {imag}i, {real} - {imag}i"
 
 
-print(solveEquation("3x^3 = 12"))
-
-
 
     
