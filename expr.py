@@ -181,10 +181,19 @@ def tokenizeExpression(text):
 
         else:
             if char in "+-*/^()":
-                tokens.append(char)
-                i += 1
+                is_unary = (len(tokens) == 0) or (tokens[-1] in ["(", "+", "-", "*", "/", "^"])
+                if char == "-" and is_unary:
+                    tokens.append(-1)
+                    tokens.append("*")
+                    i += 1
+                elif char == "+" and is_unary:
+                    i += 1
+                else:
+                    tokens.append(char)
+                    i += 1
             else:
                 raise ValueError("Uhh...is " + char + " really supposed to be there? I think not.")
+
     final_tokens = []
     for j in range(len(tokens)):
         curr = tokens[j]

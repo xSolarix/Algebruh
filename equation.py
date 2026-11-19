@@ -9,21 +9,28 @@ def solveEquation(expression):
     equalsZeroForm = ("subtract", left, right)
     equalsZeroForm = simplifyExpression(equalsZeroForm)
     terms = flatten_add(equalsZeroForm)
-    exponent = 1
+    exponent = 0
     for term in terms:
-        if isinstance(term, tuple):
+        if term == "x":
+            exponent = max(exponent, 1)
+        elif isinstance(term, tuple):
             operator, left, right = term
-            if operator == "power" and right == 2:
-                exponent = 2
-            elif operator == "multiply" and (left == ("power", "x", 2) or right == ("power", "x", 2)):
-                exponent = 2
+            if operator == "power" and left == "x" and isinstance(right, (int, float)):
+                exponent = max(exponent, right)
+            elif operator == "multiply":
+                if left == "x" or right == "x":
+                    exponent = max(exponent, 1)
+                if isinstance(left, tuple) and left[0] == "power" and left[1] == "x" and isinstance(left[2], (int, float)):
+                    exponent = max(exponent, left[2])
+                if isinstance(right, tuple) and right[0] == "power" and right[1] == "x" and isinstance(right[2], (int, float)):
+                    exponent = max(exponent, right[2])
 
-    if exponent == 1:
+    if exponent == 0 or exponent == 1:
         return solveLinear(terms)
     elif exponent == 2:
         return solveQuadratic(terms)
     else:
-        raise ValueError("Sir, I don't know how to handle this. My professor never taught me how to handle a cubic or higher.")
+        raise ValueError("Sir, I don't know how to handle this. Degree-" + str(exponent) + "s are such a pain...")
 
 
 def solveLinear(terms):
@@ -39,7 +46,7 @@ def solveLinear(terms):
             if operator == "multiply" and isinstance(left, (int, float)) and right == "x": 
                 m += left
             else:
-                raise ValueError("I hate quadratic equations. In fact, I hate anything that isn't linear. Who am I?")
+                raise ValueError("Did you just give me a quadratic? *sigh* I wish I knew what to do with this.")
 
     if m == 0 and b == 0:
         return "Infinite solutions"
@@ -86,7 +93,7 @@ def solveQuadratic(terms):
         return f"x = {real} + {imag}i, {real} - {imag}i"
 
 
-print(solveEquation("3x^2 = 12"))
+print(solveEquation("3x^3 = 12"))
 
 
 
