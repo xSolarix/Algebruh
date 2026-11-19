@@ -1,3 +1,12 @@
+# NOTE TO SELF:
+# - Add factoring (e.g., turning x^2 + 2x + 1 back into (x + 1)(x + 1))
+# And then I need to add the Rational Root Theorem, and the Binomial Theorem, and the Complex Conjugates theorem, and whatever root-finding methods exist out there
+# not newtons method though
+# And then I'd need to add latex rendering
+# And trigonometry
+# if it takes a student 6 months to learn trigonometry in a trig class
+# how long does it take to teach a computer to do trigonometry???
+
 test = ("power", "x", 2)
 test2 = ("add", ("multiply", 4, "x"), ("add", 2, 3))
 
@@ -24,15 +33,21 @@ def evaluateExpression(expression, variables):
         result = 0
     return result
 
-def flatten_add(expression):
+def flatten(expression, op): 
     if isinstance(expression, (int, float, str)):
         return [expression]
     operation, left, right = expression
-
-    if operation == "add":
-        return flatten_add(left) + flatten_add(right)
+    if op == operation:
+            return flatten(left, op) + flatten(right, op)
     else:
         return [expression]
+    return [expression]
+
+def flatten_add(expression):
+    return flatten(expression, "add")
+
+def flatten_multiply(expression): #You did need a flatten multiply function :D
+    return flatten(expression, "multiply")
 
 def simplifyExpression(expression):
     if isinstance(expression, (int, float, str)):
@@ -87,26 +102,58 @@ def simplifyExpression(expression):
         return result
 
     elif operation == "multiply":
-        if left == 0 or right == 0:
+        factors = flatten_multiply(("multiply", left, right))
+
+        for i, factor in enumerate(factors):
+            if isinstance(factor, tuple) and factor[0] == "add":
+                _, add_left, add_right = factor
+                others = factors[:i] + factors[i + 1:]
+                rest = others[0]
+                for item in others[1:]:
+                    rest = ("multiply", rest, item)
+                return simplifyExpression(("add", ("multiply", rest, add_left), ("multiply", rest, add_right)))
+
+        coeff = 1
+        base_powers = {}
+
+        for factor in factors:
+            if factor == 0:
+                return 0
+            elif isinstance(factor, (int, float)):
+                coeff *= factor
+            elif isinstance(factor, tuple) and factor[0] == "power":
+                _, base, exp = factor
+                if base in base_powers:
+                    base_powers[base] = simplifyExpression(("add", base_powers[base], exp))
+                else:
+                    base_powers[base] = exp
+            else:
+                if factor in base_powers:
+                    base_powers[factor] = simplifyExpression(("add", base_powers[factor], 1))
+                else:
+                    base_powers[factor] = 1
+
+        if coeff == 0:
             return 0
-        elif left == 1:
-            return right
-        elif right == 1:
-            return left
-        elif isinstance(left, (int, float)) and isinstance(right, (int, float)):
-            return left * right
-        elif isinstance(left, (int, float)) and isinstance(right, tuple) and right[0] == "multiply":
-            _, inner_left, inner_right = right
-            if isinstance(inner_left, (int, float)):
-                return simplifyExpression(("multiply", left * inner_left, inner_right))
-            elif isinstance(inner_right, (int, float)):
-                return simplifyExpression(("multiply", left * inner_right, inner_left))
-        elif isinstance(right, (int, float)) and isinstance(left, tuple) and left[0] == "multiply":
-            _, inner_left, inner_right = left
-            if isinstance(inner_left, (int, float)):
-                return simplifyExpression(("multiply", right * inner_left, inner_right))
-            elif isinstance(inner_right, (int, float)):
-                return simplifyExpression(("multiply", right * inner_right, inner_left))
+
+        surviving = []
+        if coeff != 1:
+            surviving.append(coeff)
+
+        for base, exp in base_powers.items():
+            if exp == 0:
+                continue
+            elif exp == 1:
+                surviving.append(base)
+            else:
+                surviving.append(simplifyExpression(("power", base, exp)))
+
+        if len(surviving) == 0:
+            return 1
+        result = surviving[0]
+        for item in surviving[1:]:
+            result = ("multiply", result, item)
+        return result
             
     elif operation == "divide":
         if right == 0:
