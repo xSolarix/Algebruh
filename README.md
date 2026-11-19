@@ -1,2 +1,2 @@
 # Algebruh
-A symbolic algebra math engine with an even more symbolic name
+A symbolic algebra math engine with an even more symbolic name...
