@@ -2,7 +2,6 @@ test = ("power", "x", 2)
 test2 = ("add", ("multiply", 4, "x"), ("add", 2, 3))
 
 def evaluateExpression(expression, variables):
-
     if isinstance(expression, (int, float)):
         return expression
     
@@ -20,32 +19,75 @@ def evaluateExpression(expression, variables):
     elif operation == "divide":
         result = evaluateExpression(num1, variables) / evaluateExpression(num2, variables)
     elif operation == "power":
-            result = evaluateExpression(num1, variables) ** evaluateExpression(num2, variables)
+        result = evaluateExpression(num1, variables) ** evaluateExpression(num2, variables)
     else:
         result = 0
     return result
 
+def flatten_add(expression):
+    if isinstance(expression, (int, float, str)):
+        return [expression]
+    operation, left, right = expression
+
+    if operation == "add":
+        return flatten_add(left) + flatten_add(right)
+    else:
+        return [expression]
+
 def simplifyExpression(expression):
     if isinstance(expression, (int, float, str)):
-            return expression
+        return expression
 
     operation, left, right = expression
+
+    if operation == "subtract":
+        return simplifyExpression(("add", left, ("multiply", -1, right)))
+
     left = simplifyExpression(left)
     right = simplifyExpression(right)
 
-  
     if operation == "add":
-        if left == 0:
-            return right
-        elif right == 0:
-            return left
-        else:
-            if isinstance(left, (int, float)) and isinstance(right, (int, float)):
-                return left + right
-    elif operation == "multiply":
-        if left == 0:
+        terms = flatten_add(("add", left, right))
+
+        constant_sum = 0
+        term_totals = {}
+
+        for term in terms:
+            if isinstance(term, (int, float)):
+                constant_sum += term
+            elif isinstance(term, tuple) and term[0] == "multiply":
+                _, m_left, m_right = term
+                if isinstance(m_left, (int, float)):
+                    coeff, base = m_left, m_right
+                elif isinstance(m_right, (int, float)):
+                    coeff, base = m_right, m_left
+                else:
+                    coeff, base = 1, term
+                term_totals[base] = term_totals.get(base, 0) + coeff
+            else:
+                term_totals[term] = term_totals.get(term, 0) + 1
+
+        surviving = []
+        if constant_sum != 0:
+            surviving.append(constant_sum)
+
+        for base, coeff in term_totals.items():
+            if coeff == 0:
+                continue
+            elif coeff == 1:
+                surviving.append(base)
+            else:
+                surviving.append(simplifyExpression(("multiply", coeff, base)))
+
+        if len(surviving) == 0:
             return 0
-        elif right == 0:
+        result = surviving[0]
+        for item in surviving[1:]:
+            result = ("add", result, item)
+        return result
+
+    elif operation == "multiply":
+        if left == 0 or right == 0:
             return 0
         elif left == 1:
             return right
@@ -54,14 +96,6 @@ def simplifyExpression(expression):
         else:
             if isinstance(left, (int, float)) and isinstance(right, (int, float)):
                 return left * right
-    elif operation == "subtract":
-        if right == 0:
-            return left
-        elif left == right:
-            return 0
-        else:
-            if isinstance(left, (int, float)) and isinstance(right, (int, float)):
-                return left - right
     elif operation == "divide":
         if right == 0:
             raise ZeroDivisionError("Cannot Divide By Zero (limits, anyone?)")
@@ -73,11 +107,11 @@ def simplifyExpression(expression):
             if isinstance(left, (int, float)) and isinstance(right, (int, float)):
                 return left / right
     elif operation == "power":
-        if left == 0:
+        if right == 0:
+            return 1
+        elif left == 0:
             return 0
         elif left == 1:
-            return 1
-        elif right == 0:
             return 1
         elif right == 1:
             return left
@@ -138,7 +172,7 @@ def tokenizeExpression(text):
                 tokens.append(char)
                 i += 1
             else:
-                raise(ValueError("Uhh...is " + char + " really supposed to be there? I think not."))
+                raise ValueError("Uhh...is " + char + " really supposed to be there? I think not.")
     final_tokens = []
     for j in range(len(tokens)):
         curr = tokens[j]
@@ -195,5 +229,3 @@ def parseExpression(text):
         output.append((operationNames[op], left, right))
 
     return output[0]
-
-print(beautifyExpression(simplifyExpression(parseExpression("4 + 3x^2 - (2 + 1)"))))
