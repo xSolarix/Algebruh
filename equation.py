@@ -20,8 +20,10 @@ def solveEquation(expression):
 
     if exponent == 1:
         return solveLinear(terms)
-    else:
+    elif exponent == 2:
         return solveQuadratic(terms)
+    else:
+        raise ValueError("Sir, I don't know how to handle this. My professor never taught me how to handle a cubic or higher.")
 
 
 def solveLinear(terms):

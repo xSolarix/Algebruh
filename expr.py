@@ -93,9 +93,21 @@ def simplifyExpression(expression):
             return right
         elif right == 1:
             return left
-        else:
-            if isinstance(left, (int, float)) and isinstance(right, (int, float)):
-                return left * right
+        elif isinstance(left, (int, float)) and isinstance(right, (int, float)):
+            return left * right
+        elif isinstance(left, (int, float)) and isinstance(right, tuple) and right[0] == "multiply":
+            _, inner_left, inner_right = right
+            if isinstance(inner_left, (int, float)):
+                return simplifyExpression(("multiply", left * inner_left, inner_right))
+            elif isinstance(inner_right, (int, float)):
+                return simplifyExpression(("multiply", left * inner_right, inner_left))
+        elif isinstance(right, (int, float)) and isinstance(left, tuple) and left[0] == "multiply":
+            _, inner_left, inner_right = left
+            if isinstance(inner_left, (int, float)):
+                return simplifyExpression(("multiply", right * inner_left, inner_right))
+            elif isinstance(inner_right, (int, float)):
+                return simplifyExpression(("multiply", right * inner_right, inner_left))
+            
     elif operation == "divide":
         if right == 0:
             raise ZeroDivisionError("Cannot Divide By Zero (limits, anyone?)")
